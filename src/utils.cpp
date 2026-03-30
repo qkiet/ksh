@@ -3,21 +3,37 @@
 #include <iostream>
 #include <filesystem>
 
-void vector_to_null_term_char_pointer_list(const std::vector<std::string> &vec, char ***ptr_list) {
-    *ptr_list = (char**) malloc(vec.size() + 1);
-    for (int i = 0; i < vec.size(); i++) {
-        (*ptr_list)[i] = (char *) malloc(vec[i].length() + 1);
-        memset((*ptr_list)[i], 0, vec[i].length() + 1);
-        memcpy((*ptr_list)[i], vec[i].c_str(), vec[i].length());
+char** vector_to_null_term_char_pointer_list(const std::vector<std::string> &vec, size_t *len) {
+    *len = vec.size() + 1;
+    char **ptr_list = (char**) malloc(*len * sizeof(char*));
+    if (ptr_list == nullptr) {
+        std::cerr << "Failed to allocate memory for ptr_list" << std::endl;
+        return nullptr;
     }
-    (*ptr_list)[vec.size()] = nullptr;
+    printf("ptr_list = %p\n", ptr_list);
+    for (int i = 0; i < vec.size(); i++) {
+        ptr_list[i] = (char *) calloc(vec[i].length() + 1, sizeof(char));
+        memcpy(ptr_list[i], vec[i].c_str(), vec[i].length());
+        printf("ptr_list[%d] = %p\n", i, ptr_list[i]);
+    }
+    // The last element is the null terminator
+    printf("vec.size() = %d\n", vec.size());
+    ptr_list[vec.size()] = nullptr;
+    printf("ptr_list[%d] = %p\n", vec.size(), ptr_list[vec.size()]);
+    return ptr_list;
 }
 
-void free_char_pointer_list(char **ptr_list[], size_t len) {
+void free_char_pointer_list(char ***ptr_list, size_t len) {
+    std::cout << "(free_char_pointer_list) Freeing list " << ptr_list << " with length " << len << std::endl;
     for (int i = 0; i < len; i++) {
-        free((*ptr_list)[i]);
+        printf("(free_char_pointer_list) ptr_list[%d] = %p\n", i, ptr_list[i]);
+        auto element = (char *)ptr_list[i];
+        if (element != nullptr) {
+            printf("Freeing element %d with value %p\n", i, element);
+            free(element);
+            ptr_list[i] = nullptr;
+        }
     }
-    free(*ptr_list);
 }
 
 

@@ -78,7 +78,8 @@ void run_interactive_mode() {
             continue;
         }
         auto command_args = split_string(command_buff);
-        execv_cpp_wrapper(absolute_executable_path, command_args);
+        int status;
+        execv_cpp_wrapper(absolute_executable_path, command_args, &status);
     }
 }
 
@@ -91,7 +92,8 @@ void run_sub_command(const CommandLineOptions &options) {
         exit(ENOENT);
     }
     auto command_args = split_string(options.sub_command);
-    execv_cpp_wrapper(absolute_executable_path, command_args);
+    int status;
+    execv_cpp_wrapper(absolute_executable_path, command_args, &status);
 }
 
 

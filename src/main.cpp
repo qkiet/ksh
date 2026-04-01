@@ -77,8 +77,11 @@ void run_interactive_mode() {
             std::cerr << "No such file found \"" << executable << "\"" << std::endl;
             continue;
         }
-        auto command_args = split_string(command_buff);
-        command_args[0] = absolute_executable_path; // The first argument is the absolute path to the executable
+        auto first_space_pos = command_buff.find(" ");
+        std::vector<std::string> command_args;
+        if (first_space_pos != std::string::npos) {
+            command_args = split_string(command_buff.substr(first_space_pos + 1));
+        }
         int status;
         execv_cpp_wrapper(absolute_executable_path, command_args, &status);
     }

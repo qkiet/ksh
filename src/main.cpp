@@ -78,6 +78,7 @@ void run_interactive_mode() {
             continue;
         }
         auto command_args = split_string(command_buff);
+        command_args[0] = absolute_executable_path; // The first argument is the absolute path to the executable
         int status;
         execv_cpp_wrapper(absolute_executable_path, command_args, &status);
     }

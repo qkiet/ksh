@@ -44,7 +44,7 @@ std::string strip(const std::string &src, char delim) {
         if (dst[i] != delim) {
             // This is the end of the delim group. Time to replace it with empty string
             if (begin_of_delim != -1 && begin_of_delim != end_of_delim) {
-                std::cout << "Replace! begin_of_delim=" << begin_of_delim << "end_of_delim=" << end_of_delim << " with \"" << std::string(1, delim) << "\"" << std::endl;
+                std::cout << "Replace! begin_of_delim=" << begin_of_delim << ", end_of_delim=" << end_of_delim << " with \"" << std::string(1, delim) << "\"" << std::endl;
                 dst.replace(begin_of_delim, end_of_delim - begin_of_delim + 1, std::string(1, delim));
                 // Update the index after the replacement
                 i = begin_of_delim;
@@ -53,7 +53,7 @@ std::string strip(const std::string &src, char delim) {
                 continue;
             }
             if (begin_of_delim != -1 && delim_group_at_beginning) {
-                std::cout << "Replace! begin_of_delim=" << begin_of_delim << "end_of_delim=" << end_of_delim << " with \"" << std::string("") << "\"" << std::endl;
+                std::cout << "Replace! begin_of_delim=" << begin_of_delim << ", end_of_delim=" << end_of_delim << " with \"" << std::string("") << "\"" << std::endl;
                 dst.replace(begin_of_delim, end_of_delim - begin_of_delim + 1, std::string(""));
                 i = begin_of_delim;
                 begin_of_delim = -1;
@@ -83,7 +83,7 @@ std::string strip(const std::string &src, char delim) {
         end_of_delim = i;
         // If there is one delim at the end of the string, strip it too!
         if (begin_of_delim == (dst.length() - 1)) {
-            std::cout << "Replace! begin_of_delim=" << begin_of_delim << " with " << std::string("") << std::endl;
+            std::cout << "Replace! begin_of_delim=" << begin_of_delim << ", end_of_delim=" << end_of_delim << " with " << std::string("") << std::endl;
             dst.replace(begin_of_delim, 1, std::string(""));
             i = begin_of_delim;
             begin_of_delim = -1;

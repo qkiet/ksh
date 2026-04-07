@@ -5,6 +5,7 @@
 #include <iostream>
 #include <filesystem>
 #include "debug_logger.h"
+#include <stack>
 
 
 void debug_vector(const std::vector<std::string> &vec) {
@@ -130,4 +131,21 @@ std::vector<std::string> split_string(const std::string &str, char delim) {
         vec.push_back(sub_str);
     }
     return vec;
+}
+
+bool is_properly_quoted(const std::string &str) {
+    if (str.length() == 0) {
+        return true;
+    }
+    std::stack<char> quote_stack;
+    for (const auto &c : str) {
+        if (c == '"') {
+            if (quote_stack.empty()) {
+                quote_stack.push(c);
+            } else {
+                quote_stack.pop();
+            }
+        }
+    }
+    return quote_stack.empty();
 }

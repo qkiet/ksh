@@ -77,7 +77,8 @@ void run_interactive_mode() {
         if (executable == std::string("exit")) {
             exit(0);
         }
-        execute_command(command_buff);
+        bool properly_quoted;
+        execute_command(command_buff, properly_quoted);
     }
 }
 

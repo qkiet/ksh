@@ -8,6 +8,6 @@ void debug_vector(const std::vector<std::string> &vec);
 std::string resolve_complete_execute_path(const std::string &input_executable_path);
 std::string strip(const std::string &src, char delim = ' ');
 std::vector<std::string> split_string(const std::string &str, char delim = ' ');
-
+bool is_properly_quoted(const std::string &str);
 
 #endif // KSH_UTILS_H

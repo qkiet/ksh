@@ -9,8 +9,14 @@
 
 
 
-int execute_command(const std::string &command) {
+int execute_command(const std::string &command, bool &properly_quoted) {
     if (strip(command).length() == 0) {
+        return EINVAL;
+    }
+    properly_quoted = is_properly_quoted(command);
+    if (!properly_quoted) {
+        std::cerr << "Command is not properly quoted" << std::endl;
+        properly_quoted = false;
         return EINVAL;
     }
     DebugLogger::print("Executing command \"", command, "\"");

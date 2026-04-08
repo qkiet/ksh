@@ -49,32 +49,50 @@ std::string strip(const std::string &src, char delim) {
     std::string dst = src;
     size_t begin_of_delim = -1;
     size_t end_of_delim = -1;
-    bool delim_group_at_beginning = false;
-    for (size_t i = 0; i < src.length();) {
+    bool is_in_quote = false;
+    for (size_t i = 0; i < dst.length();) {
         if (dst[i] != delim) {
-            // This is the end of the delim group. Time to replace it with empty string
-            if (begin_of_delim != -1 && begin_of_delim != end_of_delim) {
-                DebugLogger::print("Replace! begin_of_delim=", begin_of_delim, ", end_of_delim=", end_of_delim, " with \"", std::string(1, delim), "\"");
-                dst.replace(begin_of_delim, end_of_delim - begin_of_delim + 1, std::string(1, delim));
-                // Update the index after the replacement
-                i = begin_of_delim;
+            if (dst[i] == '"') {
+                if (i == 0) {
+                    is_in_quote = true;
+                    DebugLogger::print("Toggle quote mode to true");
+                }
+                if (dst[i - 1] != '\\') {
+                    // Comes the real double quote that we need to fear. Toggle quote mode
+                    is_in_quote = !is_in_quote;
+                    DebugLogger::print("Toggle quote mode to ", is_in_quote ? "true" : "false");
+                }
+            }
+            if (begin_of_delim == 0) {
+                DebugLogger::print("Replace! begin_of_delim=", begin_of_delim, ", end_of_delim=", end_of_delim, " with \"", std::string(""), "\"");
+                dst.replace(begin_of_delim, end_of_delim - begin_of_delim + 1, std::string(""));
+                // Afther this, index 0 is the character that index point to
+                // So to update index for next iteration, we need to point to the next character, which is index 1
+                i = 1;
                 begin_of_delim = -1;
                 end_of_delim = -1;
                 continue;
             }
-            if (begin_of_delim != -1 && delim_group_at_beginning) {
-                DebugLogger::print("Replace! begin_of_delim=", begin_of_delim, ", end_of_delim=", end_of_delim, " with \"", std::string(""), "\"");
-                dst.replace(begin_of_delim, end_of_delim - begin_of_delim + 1, std::string(""));
-                i = begin_of_delim;
+            // Delim group that is located in the middle of the string, replace it with only one delim
+            if (begin_of_delim != -1 && begin_of_delim != end_of_delim) {
+                DebugLogger::print("Replace! begin_of_delim=", begin_of_delim, ", end_of_delim=", end_of_delim, " with \"", std::string(1, delim), "\"");
+                dst.replace(begin_of_delim, end_of_delim - begin_of_delim + 1, std::string(1, delim));
+                // Update and increase index for next iteration. Increase by 2 because we replaced the delim group
+                // with one delim, plus 1 for current character index point to
+                i = begin_of_delim + 2;
                 begin_of_delim = -1;
                 end_of_delim = -1;
-                delim_group_at_beginning = false;
                 continue;
             }
             // Otherwise, just move to the next character
             i++;
             begin_of_delim = -1;
             end_of_delim = -1;
+            continue;
+        }
+        // Delim is inside a quote, just skip it
+        if (is_in_quote) {
+            i++;
             continue;
         }
         if (begin_of_delim != -1) {
@@ -84,6 +102,7 @@ std::string strip(const std::string &src, char delim) {
             i++;
             // Special case: if the delim is at the end of the string, strip it too!
             if (i >= dst.length()) {
+                DebugLogger::print("The delim is at the end of the string, strip it too!");
                 DebugLogger::print("Replace! begin_of_delim=", begin_of_delim, ", end_of_delim=", end_of_delim, " with \"\"");
                 dst.replace(begin_of_delim, end_of_delim - begin_of_delim + 1, std::string(""));
             }
@@ -91,9 +110,6 @@ std::string strip(const std::string &src, char delim) {
         }
         // this is the first delim of a new delim group
         DebugLogger::print("New delim group found at index ", i);
-        if (i == 0) {
-            delim_group_at_beginning = true;
-        }
         begin_of_delim = i;
         end_of_delim = i;
         // If there is one delim at the end of the string, strip it too!
@@ -113,12 +129,13 @@ std::string strip(const std::string &src, char delim) {
 
 std::tuple<bool, std::vector<std::string>> split_command_into_parts(const std::string &cmd, char delim) {
     DebugLogger::print("Splitting string \"", cmd, "\" with delimiter \"", delim, "\" into parts");
-    if (cmd.length() == 0) {
-        return std::make_tuple(true, std::vector<std::string>());
-    }
     std::vector<std::string> vec;
     // Sanitize delimit first if there are consecutive deliminators occasion
     auto sanitized_str = strip(cmd, delim);
+    if (sanitized_str.length() == 0) {
+        return std::make_tuple(true, std::vector<std::string>());
+    }
+    DebugLogger::print("Sanitized string \"", sanitized_str, "\"");
     bool is_in_quote = false;
     std::string current_part;
     for (auto it = sanitized_str.begin(); it != sanitized_str.end(); it++) {

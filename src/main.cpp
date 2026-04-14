@@ -59,6 +59,7 @@ void run_interactive_mode() {
         std::getline(std::cin, command_buff);
         // If the user hits Ctrl+D, exit the shell
         if (std::cin.eof()) {
+            DebugLogger::print("Received EOF, exiting shell");
             exit(0);
         }
         DebugLogger::print("Receive user input \"", command_buff, "\"");

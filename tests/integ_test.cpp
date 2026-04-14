@@ -62,7 +62,7 @@ protected:
         close(stdout_pipe[1]);
         input_fd = stdin_pipe[1];
         output_fd = stdout_pipe[0];
-        std::cout << "Done setting up" << std::endl;
+        std::cout << "Done setting up for suite \"" << test_info->test_suite_name() << "\" and test case \"" << test_info->name() << "\"" << std::endl;
     }
 
     void TearDown() override {
@@ -72,7 +72,7 @@ protected:
             kill(shell_pid, SIGTERM);
             waitpid(shell_pid, nullptr, 0);
         }
-        std::cout << "Done tearing down" << std::endl;
+        std::cout << "Done tearing down for suite \"" << test_info->test_suite_name() << "\" and test case \"" << test_info->name() << "\"" << std::endl;
     }
 };
 

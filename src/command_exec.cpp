@@ -53,7 +53,7 @@ int execute_command(const std::string &command, bool &properly_quoted) {
     auto absolute_executable_path = resolve_complete_execute_path(executable);
     DebugLogger::print("Resolved complete execute path for \"", executable, "\" to \"", absolute_executable_path, "\"");
     if (absolute_executable_path.length() == 0) {
-        DebugLogger::error("No such executable file found \"", executable, "\"");
+        std::cerr << "ksh: " << executable << ": command not found" << std::endl;
         return ENOENT;
     }
     DebugLogger::print("exec: ", absolute_executable_path, " (from \"", executable, "\")");

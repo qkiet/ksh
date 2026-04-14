@@ -112,3 +112,18 @@ TEST_F(IntegTest, SendEOFToShell) {
     EXPECT_TRUE(WIFEXITED(status));
     EXPECT_EQ(WEXITSTATUS(status), 0);
 }
+
+TEST_F(IntegTest, QuotedCommandExecution) {
+    read_shell_output(); // Skip the prompt
+    write_command_to_shell_with_newline("echo \"hello\"");
+    read_shell_output();
+    EXPECT_EQ(std::string(m_shell_output_buffer), "hello\n");
+    read_shell_output(); // Skip the prompt
+    write_command_to_shell_with_newline("echo hello\"world\"");
+    read_shell_output();
+    EXPECT_EQ(std::string(m_shell_output_buffer), "helloworld\n");
+    read_shell_output(); // Skip the prompt
+    write_command_to_shell_with_newline("echo \"hello world\"");
+    read_shell_output();
+    EXPECT_EQ(std::string(m_shell_output_buffer), "hello world\n");
+}

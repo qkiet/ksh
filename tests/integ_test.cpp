@@ -100,7 +100,9 @@ TEST_F(IntegTest, ExitCommandExecution) {
 }
 
 TEST_F(IntegTest, SendEOFToShell) {
-    // Because 
+    // Closing write-end of the pipe "to shell" makes kernel see zero writers remaining.
+    // Shell's std::getline(std::cin, ...) calls read() on the "to shell" pipe's read-end,
+    // gets 0 bytes (EOF). std::cin.eof() becomes true, shell exits cleanly.
     close(input_fd);
     int status;
     waitpid(shell_pid, &status, 0);

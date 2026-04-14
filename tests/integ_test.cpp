@@ -9,10 +9,13 @@
 
 class IntegTest : public ::testing::Test {
 protected:
-    pid_t shell_pid = -1;
-    int input_fd = -1;
-    int output_fd = -1;
-    const ::testing::TestInfo* test_info = ::testing::UnitTest::GetInstance()->current_test_info();
+    char m_shell_output_buffer[1024];
+    pid_t m_shell_pid = -1;
+    int m_input_fd = -1;
+    int m_output_fd = -1;
+    int m_to_shell_pipe[2];
+    int m_from_shell_pipe[2];
+    const ::testing::TestInfo* m_test_info = ::testing::UnitTest::GetInstance()->current_test_info();
     void SetUp() override {
         char current_directory[PATH_MAX];
         memset(current_directory, 0, PATH_MAX);
@@ -25,76 +28,76 @@ protected:
         // @todo: use better way to get the path of shell
         strncat(shell_path, "/build/ksh", PATH_MAX);
 
-        int to_shell_pipe[2];
-        int from_shell_pipe[2];
-        if (pipe(to_shell_pipe) == -1) {
+        
+        if (pipe(m_to_shell_pipe) == -1) {
             FAIL() << "Failed to create stdin pipe";
         }
-        if (pipe(from_shell_pipe) == -1) {
-            close(to_shell_pipe[0]);
-            close(to_shell_pipe[1]);
+        if (pipe(m_from_shell_pipe) == -1) {
+            close(m_to_shell_pipe[0]);
+            close(m_to_shell_pipe[1]);
             FAIL() << "Failed to create stdout pipe";
         }
 
         char test_log_file[PATH_MAX];
         memset(test_log_file, 0, PATH_MAX);
-        snprintf(test_log_file, PATH_MAX, "ksh_integ_test_%s_%s.log", test_info->test_suite_name(), test_info->name());
+        snprintf(test_log_file, PATH_MAX, "ksh_integ_test_%s_%s.log", m_test_info->test_suite_name(), m_test_info->name());
 
-        shell_pid = fork();
-        if (shell_pid == -1) {
+        m_shell_pid = fork();
+        if (m_shell_pid == -1) {
             FAIL() << "Failed to fork child process";
         }
-        if (shell_pid == 0) {
-            close(to_shell_pipe[1]);
-            dup2(to_shell_pipe[0], STDIN_FILENO);
-            close(to_shell_pipe[0]);
+        if (m_shell_pid == 0) {
+            close(m_to_shell_pipe[1]);
+            dup2(m_to_shell_pipe[0], STDIN_FILENO);
+            close(m_to_shell_pipe[0]);
 
-            close(from_shell_pipe[0]);
-            dup2(from_shell_pipe[1], STDOUT_FILENO);
-            close(from_shell_pipe[1]);
+            close(m_from_shell_pipe[0]);
+            dup2(m_from_shell_pipe[1], STDOUT_FILENO);
+            close(m_from_shell_pipe[1]);
 
             char *args[] = {shell_path, (char *)"-d", (char *)"-l", test_log_file, nullptr};
             execv(shell_path, args);
             _exit(1);
         }
 
-        close(to_shell_pipe[0]);
-        close(from_shell_pipe[1]);
-        input_fd = to_shell_pipe[1];
-        output_fd = from_shell_pipe[0];
-        std::cout << "Done setting up for suite \"" << test_info->test_suite_name() << "\" and test case \"" << test_info->name() << "\"" << std::endl;
+        close(m_to_shell_pipe[0]);
+        close(m_from_shell_pipe[1]);
+        m_input_fd = m_to_shell_pipe[1];
+        m_output_fd = m_from_shell_pipe[0];
+        std::cout << "Done setting up for suite \"" << m_test_info->test_suite_name() << "\" and test case \"" << m_test_info->name() << "\"" << std::endl;
     }
 
     void TearDown() override {
-        if (input_fd != -1) close(input_fd);
-        if (output_fd != -1) close(output_fd);
-        if (shell_pid > 0) {
-            kill(shell_pid, SIGTERM);
-            waitpid(shell_pid, nullptr, 0);
+        if (m_input_fd != -1) close(m_input_fd);
+        if (m_output_fd != -1) close(m_output_fd);
+        if (m_shell_pid > 0) {
+            kill(m_shell_pid, SIGTERM);
+            waitpid(m_shell_pid, nullptr, 0);
         }
-        std::cout << "Done tearing down for suite \"" << test_info->test_suite_name() << "\" and test case \"" << test_info->name() << "\"" << std::endl;
+        std::cout << "Done tearing down for suite \"" << m_test_info->test_suite_name() << "\" and test case \"" << m_test_info->name() << "\"" << std::endl;
+    }
+
+    ssize_t read_shell_output() {
+        memset(m_shell_output_buffer, 0, sizeof(m_shell_output_buffer));
+        return read(m_output_fd, m_shell_output_buffer, sizeof(m_shell_output_buffer) - 1);
+    }   
+
+    ssize_t write_command_to_shell_with_newline(const std::string &command) {
+        return write(m_input_fd, command.c_str(), command.size()) + write(m_input_fd, "\n", 1);
     }
 };
 
 TEST_F(IntegTest, SimpleCommandExecution) {
-    char buffer[1024];
-
-    memset(buffer, 0, sizeof(buffer));
-    read(output_fd, buffer, sizeof(buffer) - 1);
-    std::cout << "Prompt: " << buffer << std::endl;
-
-    write(input_fd, "echo hello\n", 11);
-
-    memset(buffer, 0, sizeof(buffer));
-    read(output_fd, buffer, sizeof(buffer) - 1);
-    std::cout << "Output: " << buffer << std::endl;
-    EXPECT_EQ(std::string(buffer), "hello\n");
+    read_shell_output(); // Skip the prompt
+    write_command_to_shell_with_newline("echo hello");
+    read_shell_output();
+    EXPECT_EQ(std::string(m_shell_output_buffer), "hello\n");
 }
 
 TEST_F(IntegTest, ExitCommandExecution) {
-    write(input_fd, "exit\n", 5);
+    write_command_to_shell_with_newline("exit");
     int status;
-    waitpid(shell_pid, &status, 0);
+    waitpid(m_shell_pid, &status, 0);
     EXPECT_TRUE(WIFEXITED(status));
     EXPECT_EQ(WEXITSTATUS(status), 0);
 }
@@ -103,9 +106,9 @@ TEST_F(IntegTest, SendEOFToShell) {
     // Closing write-end of the pipe "to shell" makes kernel see zero writers remaining.
     // Shell's std::getline(std::cin, ...) calls read() on the "to shell" pipe's read-end,
     // gets 0 bytes (EOF). std::cin.eof() becomes true, shell exits cleanly.
-    close(input_fd);
+    close(m_input_fd);
     int status;
-    waitpid(shell_pid, &status, 0);
+    waitpid(m_shell_pid, &status, 0);
     EXPECT_TRUE(WIFEXITED(status));
     EXPECT_EQ(WEXITSTATUS(status), 0);
 }

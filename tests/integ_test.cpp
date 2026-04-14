@@ -25,14 +25,14 @@ protected:
         // @todo: use better way to get the path of shell
         strncat(shell_path, "/build/ksh", PATH_MAX);
 
-        int stdin_pipe[2];
-        int stdout_pipe[2];
-        if (pipe(stdin_pipe) == -1) {
+        int to_shell_pipe[2];
+        int from_shell_pipe[2];
+        if (pipe(to_shell_pipe) == -1) {
             FAIL() << "Failed to create stdin pipe";
         }
-        if (pipe(stdout_pipe) == -1) {
-            close(stdin_pipe[0]);
-            close(stdin_pipe[1]);
+        if (pipe(from_shell_pipe) == -1) {
+            close(to_shell_pipe[0]);
+            close(to_shell_pipe[1]);
             FAIL() << "Failed to create stdout pipe";
         }
 
@@ -45,23 +45,23 @@ protected:
             FAIL() << "Failed to fork child process";
         }
         if (shell_pid == 0) {
-            close(stdin_pipe[1]);
-            dup2(stdin_pipe[0], STDIN_FILENO);
-            close(stdin_pipe[0]);
+            close(to_shell_pipe[1]);
+            dup2(to_shell_pipe[0], STDIN_FILENO);
+            close(to_shell_pipe[0]);
 
-            close(stdout_pipe[0]);
-            dup2(stdout_pipe[1], STDOUT_FILENO);
-            close(stdout_pipe[1]);
+            close(from_shell_pipe[0]);
+            dup2(from_shell_pipe[1], STDOUT_FILENO);
+            close(from_shell_pipe[1]);
 
             char *args[] = {shell_path, (char *)"-d", (char *)"-l", test_log_file, nullptr};
             execv(shell_path, args);
             _exit(1);
         }
 
-        close(stdin_pipe[0]);
-        close(stdout_pipe[1]);
-        input_fd = stdin_pipe[1];
-        output_fd = stdout_pipe[0];
+        close(to_shell_pipe[0]);
+        close(from_shell_pipe[1]);
+        input_fd = to_shell_pipe[1];
+        output_fd = from_shell_pipe[0];
         std::cout << "Done setting up for suite \"" << test_info->test_suite_name() << "\" and test case \"" << test_info->name() << "\"" << std::endl;
     }
 
@@ -100,6 +100,7 @@ TEST_F(IntegTest, ExitCommandExecution) {
 }
 
 TEST_F(IntegTest, SendEOFToShell) {
+    // Because 
     close(input_fd);
     int status;
     waitpid(shell_pid, &status, 0);

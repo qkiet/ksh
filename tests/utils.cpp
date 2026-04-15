@@ -34,7 +34,19 @@ TEST(UtilTest, SplitStringSimple) {
     EXPECT_EQ(parts5, std::vector<std::string>({""}));
 }
 
-// ========== Nasty edge cases for split_command_into_parts ==========
+// Test the split_string function
+TEST(UtilTest, SplitStringWithMultipleCharactersDelimiter) {
+    auto [properly_quoted, parts] = split_string_into_parts("hello && world", "&&");
+    EXPECT_TRUE(properly_quoted);
+    EXPECT_EQ(parts.size(), 2);
+    EXPECT_EQ(parts, std::vector<std::string>({"hello ", " world"}));
+    auto [properly_quoted2, parts2] = split_string_into_parts("hello && world &&", "&&");
+    EXPECT_TRUE(properly_quoted2);
+    EXPECT_EQ(parts2.size(), 3);
+    EXPECT_EQ(parts2, std::vector<std::string>({"hello ", " world ", ""}));
+}
+
+// ========== Nasty edge cases for split_string_into_parts ==========
 
 // Multiple consecutive delimiters — does it collapse them or produce empties?
 TEST(SplitNasty, MultipleConsecutiveSpaces) {
